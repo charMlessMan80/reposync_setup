@@ -26,6 +26,8 @@ for ver in "${VERS[@]}"; do
         # Sync repository with cleanup and metadata
         reposync \
             --newest-only \
+            --download-metadata \
+            --refresh \
             --config="../config/$ver/repo.conf" \
             --repoid="$repo" \
             --download-path="$MIRROR_BASE/$ver" \
