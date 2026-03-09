@@ -5,10 +5,11 @@ MIRROR_BASE="/data/repo/OracleLinux"
 VERS=("OL9" "OL8")
 REPOS=("baseos" "appstream" "epel")
 ARCH="x86_64"
-LOG_FILE=/data/repo/logs/repo_sync_$(date +%Y.%m.%d).log
+LOG_FOLDER="/data/repo/logs"
+LOG_FILE="$LOG_FOLDER/repo_sync_$(date +%Y.%m.%d).log"
 
 # Remove old logs
-find "$LOG_FILE*" -mtime +5 -delete; >> $LOG_FILE 2>&1
+find "$LOG_FOLDER" -name "repo_sync_*.log" -mtime +5 -delete; >> $LOG_FILE 2>&1
 
 # Log function
 log() {
