@@ -20,9 +20,6 @@ for ver in "${VERS[@]}"; do
     for repo in "${REPOS[@]}"; do
         log "Starting sync for repository: $ver $repo"
 
-        # Create repository directory
-        mkdir -p "$MIRROR_BASE/$ver/$repo"
-
         # Sync repository with cleanup and metadata
         reposync \
             --newest-only \
@@ -43,4 +40,4 @@ for ver in "${VERS[@]}"; do
     done
 done
 
-    log "Repository mirror setup completed"
+    log "Repository mirror resync completed"
