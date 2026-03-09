@@ -7,7 +7,6 @@ VERS=("OL9" "OL8")
 REPOS=("baseos" "appstream" "epel")
 ARCH="x86_64"
 REPO_SERVER="reposerv.domain"
-ANSIBLE_SERVER="ansiserv.domain"
 LOG_FILE=/data/repo/logs/repo_sync_$(date +%Y.%m.%d).log
 
 log() {
