@@ -1,0 +1,64 @@
+#!/bin/bash
+# Complete YUM repository mirror setup script
+
+MIRROR_BASE="/data/repo/OracleLinux"
+WEB_BASE="/var/www/html/repo/OracleLinux"
+VERS=("OL9" "OL8")
+REPOS=("baseos" "appstream" "epel")
+ARCH="x86_64"
+REPO_SERVER="reposerv.domain"
+ANSIBLE_SERVER="ansiserv.domain"
+LOG_FILE=/data/repo/logs/repo_sync_$(date +%Y.%m.%d).log
+
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
+}
+
+# Install start and enable apache server
+dnf install httpd -y
+systemctl enable --now httpd
+
+# Mirror each repository
+for ver in "${VERS[@]}"; do
+    mkdir -p "$MIRROR_BASE/$ver"
+    cat > "$MIRROR_BASE/$ver/mirror_$ARCH.repo" << EOF
+EOF
+    for repo in "${REPOS[@]}"; do
+        log "Starting sync for repository: $ver $repo"
+
+        # Create repository directory
+        mkdir -p "$MIRROR_BASE/$ver/$repo"
+
+        # Sync repository with cleanup
+        reposync \
+            --newest-only \
+            --config="../config/$ver/repo.conf" \
+            --repoid="$repo" \
+            --download-path="$MIRROR_BASE/$ver" \
+            --delete \
+            --quiet \
+            >> "$LOG_FILE" 2>&1
+
+        cat >> "$MIRROR_BASE/$ver/mirror_$ARCH.repo" << EOF
+[$repo]
+name=$repo Repository Mirror
+baseurl=http://$REPO_SERVER/repo/OracleLinux/$ver/$repo/
+enabled=1
+gpgcheck=1
+
+EOF
+
+        mkdir -p "$WEB_BASE/$ver/$repo/"
+        ln -s "$MIRROR_BASE/$ver/$repo" "$WEB_BASE/$ver/$repo/$ARCH"
+
+        if [ $? -eq 0 ]; then
+            log "Successfully synced repository: $ver $repo"
+
+        else
+            log "Error syncing repository: $ver $repo"
+        fi
+    done
+ln -s "$MIRROR_BASE/$ver" "$WEB_BASE/$ver"
+done
+
+    log "Repository mirror setup completed"
