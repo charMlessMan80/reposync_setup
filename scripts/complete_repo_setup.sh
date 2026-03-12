@@ -15,10 +15,6 @@ log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
 }
 
-# Install start and enable apache server
-dnf install httpd -y
-systemctl enable --now httpd
-
 # Create log folder
 mkdir -p "$LOG_FOLDER"
 

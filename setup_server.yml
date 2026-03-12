@@ -67,6 +67,17 @@
         - "{{ sync_script_name }}"
         - "{{ complete_setup_name }}"
 
+    - name: Install Apache HTTP Server
+      package:
+        name: httpd
+        state: present
+
+    - name: Enable and start Apache service
+      systemd:
+        name: httpd
+        enabled: yes
+        state: started
+
     - name: Execute complete setup script (initial deployment)
       shell: "{{ script_deployment_path }}/{{ complete_setup_name }}"
       register: setup_result
