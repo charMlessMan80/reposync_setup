@@ -1,11 +1,12 @@
 #!/bin/sh
 # YUM repository resync script
 
-MIRROR_BASE="/data/repo/OracleLinux"
+STORAGE_BASE="/data/repo"
+MIRROR_BASE="$STORAGE_BASE/OracleLinux"
 VERS=("OL9" "OL8")
 REPOS=("baseos" "appstream" "epel")
 ARCH="x86_64"
-LOG_FOLDER="/data/repo/logs"
+LOG_FOLDER="$STORAGE_BASE/logs"
 LOG_FILE="$LOG_FOLDER/repo_sync_$(date +%Y.%m.%d).log"
 
 # Remove old logs
@@ -26,7 +27,7 @@ for ver in "${VERS[@]}"; do
             --newest-only \
             --download-metadata \
             --refresh \
-            --config="../config/$ver/repo.conf" \
+            --config="$STORAGE_BASE/config/$ver/repo.conf" \
             --repoid="$repo" \
             --download-path="$MIRROR_BASE/$ver" \
             --delete \
