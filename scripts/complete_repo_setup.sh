@@ -33,7 +33,7 @@ EOF
         reposync \
             --newest-only \
             --download-metadata \
-            --config="../config/$ver/repo.conf" \
+            --config="$STORAGE_BASE/config/$ver/repo.conf" \
             --repoid="$repo" \
             --download-path="$MIRROR_BASE/$ver" \
             --quiet \

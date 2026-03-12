@@ -27,6 +27,21 @@
         - "{{ repo_config_path }}"
         - "{{ log_path }}"
 
+    - name: Install required packages
+      package:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - dnf-utils
+        - httpd
+      when: ansible_os_family == "RedHat"
+
+    - name: Enable and start Apache service
+      systemd:
+        name: httpd
+        enabled: yes
+        state: started
+
     - name: Deploy scripts to target server
       copy:
         src: scripts/
@@ -59,6 +74,14 @@
         force: yes
       when: ansible_os_family == "RedHat"
 
+    - name: Create symlink to config folder in repo storage
+      file:
+        src: "{{ repo_config_path }}"
+        dest: /data/repo/config
+        state: link
+        force: yes
+      when: ansible_os_family == "RedHat"
+
     - name: Update script path references in repo_sync.sh
       lineinfile:
         path: "{{ script_deployment_path }}/{{ sync_script_name }}"
@@ -74,17 +97,6 @@
       loop:
         - "{{ sync_script_name }}"
         - "{{ complete_setup_name }}"
-
-    - name: Install Apache HTTP Server
-      package:
-        name: httpd
-        state: present
-
-    - name: Enable and start Apache service
-      systemd:
-        name: httpd
-        enabled: yes
-        state: started
 
     - name: Execute complete setup script (initial deployment)
       shell: "{{ script_deployment_path }}/{{ complete_setup_name }}"
