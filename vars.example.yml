@@ -1,0 +1,25 @@
+# Example variables file for setup_server.yml
+# Usage: ansible-playbook setup_server.yml -e @vars.yml
+
+# Deployment paths
+script_deployment_path: /opt/repo-sync
+repo_config_path: /etc/repo-sync/config
+log_path: /var/log/repo-sync
+
+# Cron job configuration
+cron_user: root
+cron_job_name: "Repository Sync - Monthly"
+
+# Cron schedule examples:
+# "0 2 1 * *"          - 2:00 AM on 1st day of each month (DEFAULT)
+# "0 0 * * *"          - Daily at midnight
+# "0 3 * * 0"          - Weekly: Sunday at 3:00 AM
+# "0 0 1,15 * *"       - Every 1st and 15th at midnight
+# "*/30 * * * *"       - Every 30 minutes
+# "0 */6 * * *"        - Every 6 hours
+# "0 1 * * *"          - Daily at 1:00 AM (for smaller repos)
+cron_schedule: "0 2 1 * *"
+
+# Script names (if renamed in scripts folder)
+sync_script_name: repo_sync.sh
+complete_setup_name: complete_repo_setup.sh

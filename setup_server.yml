@@ -1,0 +1,120 @@
+---
+- name: Deploy and Setup Repository Sync Script with Monthly Cron Job
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  vars:
+    script_deployment_path: /opt/repo-sync
+    repo_config_path: /etc/repo-sync/config
+    log_path: /var/log/repo-sync
+    sync_script_name: repo_sync.sh
+    complete_setup_name: complete_repo_setup.sh
+    cron_user: root
+    cron_job_name: "Repository Sync - Monthly"
+    cron_schedule: "0 2 1 * *"  # Runs at 2:00 AM on the 1st day of each month
+
+  tasks:
+    - name: Create deployment directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+        owner: root
+        group: root
+      loop:
+        - "{{ script_deployment_path }}"
+        - "{{ repo_config_path }}"
+        - "{{ log_path }}"
+
+    - name: Deploy scripts to target server
+      copy:
+        src: scripts/
+        dest: "{{ script_deployment_path }}/"
+        mode: '0755'
+        owner: root
+        group: root
+
+    - name: Deploy configuration files
+      copy:
+        src: config/
+        dest: "{{ repo_config_path }}/"
+        mode: '0644'
+        owner: root
+        group: root
+
+    - name: Create symlink to script_deployment_path in repo storage
+      file:
+        src: "{{ script_deployment_path }}"
+        dest: /data/repo/scripts
+        state: link
+        force: yes
+      when: ansible_os_family == "RedHat"
+
+    - name: Update script path references in repo_sync.sh
+      lineinfile:
+        path: "{{ script_deployment_path }}/{{ sync_script_name }}"
+        regexp: 'STORAGE_BASE="/data/repo"'
+        line: 'STORAGE_BASE="/data/repo"'
+        state: present
+
+    - name: Verify scripts are executable
+      file:
+        path: "{{ script_deployment_path }}/{{ item }}"
+        mode: '0755'
+        state: file
+      loop:
+        - "{{ sync_script_name }}"
+        - "{{ complete_setup_name }}"
+
+    - name: Execute complete setup script (initial deployment)
+      shell: "{{ script_deployment_path }}/{{ complete_setup_name }}"
+      register: setup_result
+      changed_when: setup_result.rc == 0
+      failed_when: setup_result.rc != 0
+
+    - name: Display setup script output
+      debug:
+        msg: "Setup script output:\n{{ setup_result.stdout }}"
+
+    - name: Configure monthly cron job for repository sync
+      cron:
+        name: "{{ cron_job_name }}"
+        minute: "0"
+        hour: "2"
+        day: "1"
+        month: "*"
+        weekday: "*"
+        user: "{{ cron_user }}"
+        job: "{{ script_deployment_path }}/{{ sync_script_name }} >> {{ log_path }}/cron.log 2>&1"
+        state: present
+
+    - name: Verify cron job installation
+      shell: crontab -l -u {{ cron_user }} | grep -i "repo_sync"
+      register: cron_verification
+      changed_when: false
+      failed_when: cron_verification.rc != 0
+
+    - name: Display cron job verification
+      debug:
+        msg: "Cron job successfully installed:\n{{ cron_verification.stdout }}"
+
+  handlers:
+    - name: Restart cron service
+      systemd:
+        name: crond
+        state: restarted
+        enabled: yes
+      listen: "restart crond"
+
+  post_tasks:
+    - name: Display deployment summary
+      debug:
+        msg: |
+          ====== Deployment Summary ======
+          Scripts deployed to: {{ script_deployment_path }}
+          Config deployed to: {{ repo_config_path }}
+          Logs stored in: {{ log_path }}
+          Cron job scheduled at: {{ cron_schedule }}
+          Next execution: First day of next month at 2:00 AM UTC
+          ==============================
