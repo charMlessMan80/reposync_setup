@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # Complete YUM repository mirror setup script
 
 STORAGE_BASE="/data/repo"
