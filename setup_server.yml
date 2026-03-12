@@ -43,6 +43,14 @@
         owner: root
         group: root
 
+    - name: Create data directory for repositories
+      file:
+        path: /data/repo
+        state: directory
+        mode: '0755'
+        owner: root
+        group: root
+
     - name: Create symlink to script_deployment_path in repo storage
       file:
         src: "{{ script_deployment_path }}"
