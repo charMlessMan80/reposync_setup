@@ -1,0 +1,30 @@
+# Ansible inventory files (contain sensitive info like passwords/hosts)
+inventory.ini
+inventory/
+hosts.yml
+
+# Variable files with secrets
+vars/*.yml
+!vars.example.yml
+
+# Generated files
+*.retry
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
