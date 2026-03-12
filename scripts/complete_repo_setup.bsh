@@ -1,13 +1,15 @@
 #!/bin/bash
 # Complete YUM repository mirror setup script
 
-MIRROR_BASE="/data/repo/OracleLinux"
+STORAGE_BASE="/data/repo"
+MIRROR_BASE="$STORAGE_BASE/OracleLinux"
 WEB_BASE="/var/www/html/repo/OracleLinux"
 VERS=("OL9" "OL8")
 REPOS=("baseos" "appstream" "epel")
 ARCH="x86_64"
 REPO_SERVER="reposerv.domain"
-LOG_FILE=/data/repo/logs/repo_sync_$(date +%Y.%m.%d).log
+LOG_FOLDER="$STORAGE_BASE/logs"
+LOG_FILE="$LOG_FOLDER/repo_sync_$(date +%Y.%m.%d).log"
 
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
@@ -16,6 +18,9 @@ log() {
 # Install start and enable apache server
 dnf install httpd -y
 systemctl enable --now httpd
+
+# Create log folder
+mkdir -p "$LOG_FOLDER"
 
 # Mirror each repository
 for ver in "${VERS[@]}"; do
