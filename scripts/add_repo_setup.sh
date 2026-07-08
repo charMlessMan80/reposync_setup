@@ -7,7 +7,7 @@ WEB_BASE="/var/www/html/repo/OracleLinux"
 VERS=("OL8")
 REPOS=("zabbix-agent2-plugins" "zabbix" "zabbix-non-supported")
 ARCH="x86_64"
-REPO_SERVER="mirror.touring.be"
+REPO_SERVER="mirror.example.com"
 LOG_FOLDER="$STORAGE_BASE/logs"
 LOG_FILE="$LOG_FOLDER/repo_sync_$(date +%Y.%m.%d).log"
 
