@@ -13,8 +13,35 @@
     cron_user: root
     cron_job_name: "Repository Sync - Monthly"
     cron_schedule: "0 2 1 * *"  # Runs at 2:00 AM on the 1st day of each month
+    configure_firewall: yes
+    firewall_services:
+      - http
+      - https
+    web_repo_path: /var/www/html/repo
 
   tasks:
+    - name: Grow partition /dev/sda4
+      command: growpart /dev/sda 4
+      register: growpart_result
+      changed_when: "'NOCHANGE' not in growpart_result.stdout"
+      failed_when:
+        - growpart_result.rc != 0
+        - "'NOCHANGE' not in growpart_result.stdout"
+
+    - name: Resize physical volume /dev/sda4
+      command: pvresize /dev/sda4
+
+    - name: Show volume group vg_main
+      command: vgs vg_main
+
+    - name: Extend logical volume lv_root to use all free space
+      command: lvextend -r -l +100%FREE /dev/vg_main/lv_root
+      register: lvextend_result
+      changed_when: "'matches existing size' not in lvextend_result.stderr"
+      failed_when:
+        - lvextend_result.rc != 0
+        - "'matches existing size' not in lvextend_result.stderr"
+
     - name: Create deployment directories
       file:
         path: "{{ item }}"
@@ -41,6 +68,52 @@
         name: httpd
         enabled: yes
         state: started
+
+    - name: Configure Apache to serve the repository directory
+      copy:
+        dest: /etc/httpd/conf.d/repo.conf
+        owner: root
+        group: root
+        mode: '0644'
+        content: |
+          # Managed by Ansible - repository mirror
+          Alias /repo {{ web_repo_path }}
+          <Directory "{{ web_repo_path }}">
+              Options +Indexes +FollowSymLinks
+              IndexOptions FancyIndexing HTMLTable NameWidth=*
+              AllowOverride None
+              Require all granted
+          </Directory>
+      when: ansible_os_family == "RedHat"
+      notify: "restart httpd"
+
+    - name: Ensure firewalld is installed
+      package:
+        name: firewalld
+        state: present
+      when:
+        - configure_firewall | bool
+        - ansible_os_family == "RedHat"
+
+    - name: Enable and start firewalld service
+      systemd:
+        name: firewalld
+        enabled: yes
+        state: started
+      when:
+        - configure_firewall | bool
+        - ansible_os_family == "RedHat"
+
+    - name: Open firewall services for repository server
+      firewalld:
+        service: "{{ item }}"
+        permanent: yes
+        immediate: yes
+        state: enabled
+      loop: "{{ firewall_services }}"
+      when:
+        - configure_firewall | bool
+        - ansible_os_family == "RedHat"
 
     - name: Deploy scripts to target server
       copy:
@@ -104,6 +177,36 @@
       changed_when: setup_result.rc == 0
       failed_when: setup_result.rc != 0
 
+    - name: Install SELinux management tools
+      package:
+        name: policycoreutils-python-utils
+        state: present
+      when:
+        - ansible_os_family == "RedHat"
+        - ansible_selinux.status is defined
+        - ansible_selinux.status == "enabled"
+
+    - name: Add persistent SELinux file context for repository storage
+      command: semanage fcontext -a -t httpd_sys_content_t "/data/repo(/.*)?"
+      register: sefcontext_result
+      changed_when: sefcontext_result.rc == 0
+      failed_when:
+        - sefcontext_result.rc != 0
+        - "'already defined' not in sefcontext_result.stderr"
+      when:
+        - ansible_os_family == "RedHat"
+        - ansible_selinux.status is defined
+        - ansible_selinux.status == "enabled"
+
+    - name: Apply SELinux context to repository content
+      command: restorecon -Rv /data/repo
+      register: restorecon_result
+      changed_when: "'Relabeled' in restorecon_result.stdout"
+      when:
+        - ansible_os_family == "RedHat"
+        - ansible_selinux.status is defined
+        - ansible_selinux.status == "enabled"
+
     - name: Display setup script output
       debug:
         msg: "Setup script output:\n{{ setup_result.stdout }}"
@@ -137,6 +240,13 @@
         state: restarted
         enabled: yes
       listen: "restart crond"
+
+    - name: Restart Apache service
+      systemd:
+        name: httpd
+        state: restarted
+        enabled: yes
+      listen: "restart httpd"
 
   post_tasks:
     - name: Display deployment summary

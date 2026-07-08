@@ -4,10 +4,10 @@
 STORAGE_BASE="/data/repo"
 MIRROR_BASE="$STORAGE_BASE/OracleLinux"
 WEB_BASE="/var/www/html/repo/OracleLinux"
-VERS=("OL9")
-REPOS=("baseos" "appstream" "epel" "addons" "zabbix-agent2-plugins" "zabbix" "zabbix-non-supported")
+VERS=("OL8")
+REPOS=("zabbix-agent2-plugins" "zabbix" "zabbix-non-supported")
 ARCH="x86_64"
-REPO_SERVER="reposerv.domain"
+REPO_SERVER="mirror.touring.be"
 LOG_FOLDER="$STORAGE_BASE/logs"
 LOG_FILE="$LOG_FOLDER/repo_sync_$(date +%Y.%m.%d).log"
 
@@ -21,8 +21,8 @@ mkdir -p "$LOG_FOLDER"
 # Mirror each repository
 for ver in "${VERS[@]}"; do
     mkdir -p "$MIRROR_BASE/$ver"
-    cat > "$MIRROR_BASE/$ver/mirror_$ARCH.repo" << EOF
-EOF
+#    cat > "$MIRROR_BASE/$ver/mirror_$ARCH.repo" << EOF
+#EOF
     for repo in "${REPOS[@]}"; do
         log "Starting sync for repository: $ver $repo"
 
@@ -44,7 +44,7 @@ EOF
 name=$repo Repository Mirror
 baseurl=http://$REPO_SERVER/repo/OracleLinux/$ver/$repo/$ARCH/
 enabled=1
-gpgcheck=1
+gpgcheck=0
 
 EOF
 

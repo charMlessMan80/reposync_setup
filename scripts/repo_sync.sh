@@ -3,14 +3,14 @@
 
 STORAGE_BASE="/data/repo"
 MIRROR_BASE="$STORAGE_BASE/OracleLinux"
-VERS=("OL9" "OL8")
-REPOS=("baseos" "appstream" "epel")
+VERS=("OL9")
+REPOS=("baseos" "appstream" "epel" "addons" "zabbix-agent2-plugins" "zabbix" "zabbix-non-supported")
 ARCH="x86_64"
 LOG_FOLDER="$STORAGE_BASE/logs"
 LOG_FILE="$LOG_FOLDER/repo_sync_$(date +%Y.%m.%d).log"
 
 # Remove old logs
-find "$LOG_FOLDER" -name "repo_sync_*.log" -mtime +5 -delete; >> $LOG_FILE 2>&1
+find "$LOG_FOLDER" -name "repo_sync_*.log" -mtime +5 -delete >> "$LOG_FILE" 2>&1
 
 # Log function
 log() {
@@ -41,5 +41,16 @@ for ver in "${VERS[@]}"; do
         fi
     done
 done
+
+# Restore SELinux context on newly downloaded content so Apache can serve it
+if command -v restorecon >/dev/null 2>&1 && [ "$(getenforce 2>/dev/null)" != "Disabled" ]; then
+    log "Restoring SELinux context on $STORAGE_BASE"
+    restorecon -Rv "$STORAGE_BASE" >> "$LOG_FILE" 2>&1
+    if [ $? -eq 0 ]; then
+        log "Successfully restored SELinux context on $STORAGE_BASE"
+    else
+        log "Error restoring SELinux context on $STORAGE_BASE"
+    fi
+fi
 
     log "Repository mirror resync completed"

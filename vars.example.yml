@@ -23,3 +23,14 @@ cron_schedule: "0 2 1 * *"
 # Script names (if renamed in scripts folder)
 sync_script_name: repo_sync.sh
 complete_setup_name: complete_repo_setup.sh
+
+# Firewall configuration
+# Set to false to skip firewalld configuration (e.g. firewall managed externally)
+configure_firewall: yes
+# Services/ports to open for clients to reach the repo server over HTTP(S)
+firewall_services:
+  - http
+  - https
+
+# Web root where the repository is served by Apache
+web_repo_path: /var/www/html/repo
